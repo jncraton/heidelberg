@@ -19,6 +19,94 @@ from __future__ import annotations
 import pathlib
 import re
 import sys
+from functools import lru_cache
+from urllib.parse import urlparse, parse_qs
+
+
+def _fetch_bible_passage(url: str) -> str:
+    """Fetch the passage HTML from BibleGateway for the given URL.
+
+    Returns the inner HTML of the passage content, or an empty string on failure.
+    """
+
+    try:
+        import requests
+        from bs4 import BeautifulSoup
+    except ImportError as e:
+        raise SystemExit(
+            "The python packages 'requests' and 'beautifulsoup4' are required to fetch passages. "
+            "Install them with: pip install requests beautifulsoup4"
+        ) from e
+
+    print(f"Fetching passage: {url}")
+    try:
+        resp = requests.get(url, timeout=15)
+        resp.raise_for_status()
+    except Exception as exc:
+        print(f"  Failed to fetch passage: {exc}")
+        return ""
+
+    soup = BeautifulSoup(resp.text, "html.parser")
+
+    # BibleGateway's passage content is inside a div with class "passage-content".
+    passage = soup.select_one("div.passage-content")
+    if not passage:
+        print("  Warning: passage content not found")
+        return ""
+
+    # Remove any scripts/styles to be safe.
+    for tag in passage.select("script, style"):
+        tag.decompose()
+
+    # Return the inner HTML of the passage content div.
+    return passage.decode_contents()
+
+
+@lru_cache(maxsize=256)
+def _bible_passage_for_url(url: str) -> str:
+    return _fetch_bible_passage(url)
+
+
+def _replace_bible_links(html: str) -> str:
+    """Replace BibleGateway links with <details> blocks containing the passage."""
+
+    from bs4 import BeautifulSoup
+
+    soup = BeautifulSoup(html, "html.parser")
+
+    # Find all anchors that point to BibleGateway passages with ESV.
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        if "biblegateway.com/passage" not in href:
+            continue
+        if "version=ESV" not in href:
+            continue
+
+        # Use the link text as the summary content.
+        summary_text = a.get_text(strip=True)
+        if not summary_text:
+            summary_text = href
+
+        passage_html = _bible_passage_for_url(href)
+
+        details = soup.new_tag("details")
+        summary = soup.new_tag("summary")
+        summary.string = summary_text
+        details.append(summary)
+
+        if passage_html:
+            # insert the fetched passage content; parse it as HTML fragment
+            fragment = BeautifulSoup(passage_html, "html.parser")
+            for child in fragment.contents:
+                details.append(child)
+        else:
+            placeholder = soup.new_tag("em")
+            placeholder.string = "(passage not available)"
+            details.append(placeholder)
+
+        a.replace_with(details)
+
+    return str(soup)
 
 
 def _sanitize_markdown(md: str) -> str:
@@ -68,6 +156,9 @@ def _render_html(markdown_text: str) -> str:
             extensions=["extra", "sane_lists", "smarty"],
             output_format="html5",
         )
+
+        # Replace BibleGateway ESV links with <details> containing the passage.
+        html_body = _replace_bible_links(html_body)
     except ImportError as e:
         raise SystemExit(
             "The python package 'markdown' is required to render HTML. "
