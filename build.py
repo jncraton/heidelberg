@@ -49,6 +49,10 @@ def _sanitize_markdown(md: str) -> str:
 
     md = "\n".join(lines)
 
+    # Normalize headings so that h2 are preserved and deeper headings become h3.
+    # Source uses "##" for major sections (Part I/II) and "####" for Lord's Day.
+    md = re.sub(r"^(#{3,6})\s+", "### ", md, flags=re.MULTILINE)
+
     # Convert scripture links from nrsv to ESV.
     md = md.replace("version=nrsv", "version=ESV")
 
