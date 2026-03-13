@@ -33,9 +33,17 @@ def _sanitize_markdown(md: str) -> str:
         if re.match(r"^\s*\d+\s*\[", line):
             line = re.sub(r"^\s*\d+\s*", "", line)
 
-        # Remove inline footnote markers (digits at end of line following punctuation).
-        # Example: "... my own,1" -> "... my own," and "... death---2" -> "... death---"
-        line = re.sub(r"(?<=\S)\d+\\?$", "", line)
+        # Remove footnote numbers immediately before a hard line break marker.
+        # Example: ",1\" -> ",  "
+        line = re.sub(r"\d+\\$", "  ", line)
+
+        # Convert remaining hard line breaks (trailing backslash) into Markdown breaks.
+        # In Markdown, two spaces at end of line emit a <br>.
+        line = re.sub(r"\\$", "  ", line)
+
+        # Remove remaining inline footnote numbers at the end of a line.
+        # Example: "... my own,1" -> "... my own,"
+        line = re.sub(r"(?<=\S)\d+$", "", line)
 
         lines.append(line)
 
