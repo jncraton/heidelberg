@@ -3453,7 +3453,7 @@ according to all, not only some,\
 of God's commandments.2
 
 1 [Ecc.
-7:20](https://www.biblegateway.com/passage/?search=Eccles.%207:20&version=nrsv); [Rom.
+7:20](https://www.biblegateway.com/passage/?search=Ecc.%207:20&version=nrsv); [Rom.
 7:14-15](https://www.biblegateway.com/passage/?search=Rom.%207:14-15&version=nrsv); [1
 Cor.
 13:9](https://www.biblegateway.com/passage/?search=1%20Cor.%2013:9&version=nrsv); [1
