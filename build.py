@@ -24,6 +24,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlparse, parse_qs
 
+from bs4 import BeautifulSoup
 
 _CACHE_PATH = pathlib.Path(__file__).resolve().parent / "biblegateway.json"
 _CACHE_LOCK = threading.Lock()
@@ -43,6 +44,21 @@ def _save_biblegateway_cache() -> None:
             json.dump(_BIBLEGATEWAY_CACHE, f, ensure_ascii=False, indent=2)
 
 
+def strip_passage(html):
+    passage = BeautifulSoup(html, "html.parser")
+
+    # Remove any scripts/styles to be safe.
+    for tag in passage.select("script, style"):
+        tag.decompose()
+
+    # Simplify the passage HTML by removing navigation and reference elements.
+    # These are not needed for inline scripture display.
+    for tag in passage.select("a.full-chap-link, div.crossrefs, sup.crossreference, div.passage-other-trans"):
+        tag.decompose()
+
+    return passage.decode_contents()
+
+
 def _fetch_bible_passage(url: str) -> str:
     """Fetch the passage HTML from BibleGateway for the given URL.
 
@@ -51,7 +67,6 @@ def _fetch_bible_passage(url: str) -> str:
 
     try:
         import requests
-        from bs4 import BeautifulSoup
     except ImportError as e:
         raise SystemExit(
             "The python packages 'requests' and 'beautifulsoup4' are required to fetch passages. "
@@ -74,30 +89,9 @@ def _fetch_bible_passage(url: str) -> str:
         print("  Warning: passage content not found")
         return ""
 
-    # Remove any scripts/styles to be safe.
-    for tag in passage.select("script, style"):
-        tag.decompose()
+    html = passage.decode_contents()
 
-    # Simplify the passage HTML by removing navigation and reference elements.
-    # These are not needed for inline scripture display.
-    for tag in passage.select("a.full-chap-link, div.crossrefs, sup.crossreference, .passage-other-trans"):
-        tag.decompose()
-
-    # Return the inner HTML of the passage content div.
-    return passage.decode_contents()
-
-
-def _bible_passage_for_url(url: str) -> str:
-    """Return cached passage HTML, fetching and caching as needed."""
-
-    if url in _BIBLEGATEWAY_CACHE:
-        return _BIBLEGATEWAY_CACHE[url]
-
-    html = _fetch_bible_passage(url)
-    if html:
-        with _CACHE_LOCK:
-            _BIBLEGATEWAY_CACHE[url] = html
-    return html
+    return strip_passage(html)
 
 
 def _replace_bible_links(html: str) -> str:
@@ -140,7 +134,7 @@ def _replace_bible_links(html: str) -> str:
         if not summary_text:
             summary_text = href
 
-        passage_html = _BIBLEGATEWAY_CACHE.get(href, "")
+        passage_html = strip_passage(_BIBLEGATEWAY_CACHE.get(href, ""))
 
         details = soup.new_tag("details")
         summary = soup.new_tag("summary")
