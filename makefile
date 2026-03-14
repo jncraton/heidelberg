@@ -1,4 +1,4 @@
-all: heidelberg.md
+all: index.html
 
 heidelberg.md: heidelberg.html
 	# Proccessing inner html from https://www.crcna.org/welcome/beliefs/confessions/heidelberg-catechism
@@ -7,6 +7,9 @@ heidelberg.md: heidelberg.html
 format:
 	uvx black@26.3.1 *.py
 	uvx uncomment .
+
+index.html:
+	python3 build.py
 
 clean:
 	rm -rf __pycache__
