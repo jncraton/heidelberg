@@ -55,6 +55,9 @@ def strip_passage(html):
     ):
         tag.decompose()
 
+    for tag in passage.findAll(True):
+        tag.attrs = None
+
     return passage.decode_contents()
 
 
