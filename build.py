@@ -51,7 +51,7 @@ def strip_passage(html):
         tag.decompose()
 
     for tag in passage.select(
-        "a.full-chap-link, div.crossrefs, sup.crossreference, div.passage-other-trans"
+        "a.full-chap-link, div.crossrefs, sup.crossreference, div.passage-other-trans, sup.footnote, div.footnotes"
     ):
         tag.decompose()
 
