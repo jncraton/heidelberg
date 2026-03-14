@@ -151,16 +151,14 @@ def _replace_bible_links(html: str) -> str:
 
         a.replace_with(details)
 
-    # Remove separators (semicolons and <br> tags) that appear between successive
-    # <details> elements. These are artifacts of the original markdown formatting
-    # (e.g. ";" and "\\" line breaks).
     from bs4 import NavigableString
 
     for details in soup.find_all("details"):
-        # Remove separators immediately following a <details>.
         sibling = details.next_sibling
         while sibling is not None:
-            if isinstance(sibling, NavigableString) and re.match(r"^[\s;\u00a0]*$", str(sibling)):
+            if isinstance(sibling, NavigableString) and re.match(
+                r"^[\s;\u00a0]*$", str(sibling)
+            ):
                 next_sib = sibling.next_sibling
                 sibling.extract()
                 sibling = next_sib
