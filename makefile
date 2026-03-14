@@ -4,6 +4,9 @@ heidelberg.md: heidelberg.html
 	# Proccessing inner html from https://www.crcna.org/welcome/beliefs/confessions/heidelberg-catechism
 	pandoc $< --lua-filter=filters.lua -o $@
 
+lint:
+	uvx black@26.3.1 --check *.py
+
 format:
 	uvx black@26.3.1 *.py
 	uvx uncomment .
