@@ -58,6 +58,11 @@ def _fetch_bible_passage(url: str) -> str:
     for tag in passage.select("script, style"):
         tag.decompose()
 
+    # Simplify the passage HTML by removing navigation and reference elements.
+    # These are not needed for inline scripture display.
+    for tag in passage.select("a.full-chap-link, div.crossrefs, sup.crossreference"):
+        tag.decompose()
+
     # Return the inner HTML of the passage content div.
     return passage.decode_contents()
 
