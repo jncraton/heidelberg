@@ -53,7 +53,9 @@ def strip_passage(html):
 
     # Simplify the passage HTML by removing navigation and reference elements.
     # These are not needed for inline scripture display.
-    for tag in passage.select("a.full-chap-link, div.crossrefs, sup.crossreference, div.passage-other-trans"):
+    for tag in passage.select(
+        "a.full-chap-link, div.crossrefs, sup.crossreference, div.passage-other-trans"
+    ):
         tag.decompose()
 
     return passage.decode_contents()
@@ -116,7 +118,9 @@ def _replace_bible_links(html: str) -> str:
         urls_to_fetch = [u for u in urls if u not in _BIBLEGATEWAY_CACHE]
         if urls_to_fetch:
             with ThreadPoolExecutor(max_workers=4) as executor:
-                for url, passage_html in zip(urls_to_fetch, executor.map(_fetch_bible_passage, urls_to_fetch)):
+                for url, passage_html in zip(
+                    urls_to_fetch, executor.map(_fetch_bible_passage, urls_to_fetch)
+                ):
                     if passage_html:
                         with _CACHE_LOCK:
                             _BIBLEGATEWAY_CACHE[url] = passage_html
@@ -158,7 +162,7 @@ def _replace_bible_links(html: str) -> str:
 
 def _sanitize_markdown(md: str) -> str:
     # Normalize non-breaking spaces used by pandoc output.
-    md = md.replace("\u00A0", " ")
+    md = md.replace("\u00a0", " ")
 
     lines = []
 
