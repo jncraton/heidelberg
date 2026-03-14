@@ -14,5 +14,8 @@ format:
 index.html:
 	uv run --with beautifulsoup4 --with markdown python3 build.py
 
+heidelberg.epub: index.html
+	pandoc @< -o $@
+
 clean:
 	rm -rf __pycache__
