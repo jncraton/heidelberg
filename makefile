@@ -12,7 +12,7 @@ format:
 	uvx uncomment .
 
 index.html:
-	python3 build.py
+	uv run --with beautifulsoup4 --with markdown python3 build.py
 
 clean:
 	rm -rf __pycache__
