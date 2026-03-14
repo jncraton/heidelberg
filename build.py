@@ -16,11 +16,31 @@ Requirements:
 
 from __future__ import annotations
 
+import json
 import pathlib
 import re
 import sys
-from functools import lru_cache
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlparse, parse_qs
+
+
+_CACHE_PATH = pathlib.Path(__file__).resolve().parent / "biblegateway.json"
+_CACHE_LOCK = threading.Lock()
+
+try:
+    with open(_CACHE_PATH, "r", encoding="utf-8") as f:
+        _BIBLEGATEWAY_CACHE: dict[str, str] = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    _BIBLEGATEWAY_CACHE: dict[str, str] = {}
+
+
+def _save_biblegateway_cache() -> None:
+    """Persist the in-memory BibleGateway cache to disk."""
+
+    with _CACHE_LOCK:
+        with open(_CACHE_PATH, "w", encoding="utf-8") as f:
+            json.dump(_BIBLEGATEWAY_CACHE, f, ensure_ascii=False, indent=2)
 
 
 def _fetch_bible_passage(url: str) -> str:
@@ -67,9 +87,17 @@ def _fetch_bible_passage(url: str) -> str:
     return passage.decode_contents()
 
 
-@lru_cache(maxsize=256)
 def _bible_passage_for_url(url: str) -> str:
-    return _fetch_bible_passage(url)
+    """Return cached passage HTML, fetching and caching as needed."""
+
+    if url in _BIBLEGATEWAY_CACHE:
+        return _BIBLEGATEWAY_CACHE[url]
+
+    html = _fetch_bible_passage(url)
+    if html:
+        with _CACHE_LOCK:
+            _BIBLEGATEWAY_CACHE[url] = html
+    return html
 
 
 def _replace_bible_links(html: str) -> str:
@@ -79,7 +107,27 @@ def _replace_bible_links(html: str) -> str:
 
     soup = BeautifulSoup(html, "html.parser")
 
-    # Find all anchors that point to BibleGateway passages with ESV.
+    # Collect all linked passages that need to be fetched.
+    urls: set[str] = set()
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        if "biblegateway.com/passage" not in href:
+            continue
+        if "version=ESV" not in href:
+            continue
+        urls.add(href)
+
+    if urls:
+        # Fetch passages in parallel while respecting existing cache.
+        urls_to_fetch = [u for u in urls if u not in _BIBLEGATEWAY_CACHE]
+        if urls_to_fetch:
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                for url, passage_html in zip(urls_to_fetch, executor.map(_fetch_bible_passage, urls_to_fetch)):
+                    if passage_html:
+                        with _CACHE_LOCK:
+                            _BIBLEGATEWAY_CACHE[url] = passage_html
+
+    # Replace links with fetched passages.
     for a in soup.find_all("a", href=True):
         href = a["href"]
         if "biblegateway.com/passage" not in href:
@@ -92,7 +140,7 @@ def _replace_bible_links(html: str) -> str:
         if not summary_text:
             summary_text = href
 
-        passage_html = _bible_passage_for_url(href)
+        passage_html = _BIBLEGATEWAY_CACHE.get(href, "")
 
         details = soup.new_tag("details")
         summary = soup.new_tag("summary")
@@ -305,6 +353,7 @@ def main() -> int:
     output = _wrap_html(body_html)
 
     target.write_text(output, encoding="utf-8")
+    _save_biblegateway_cache()
     print(f"Wrote {target}")
     return 0
 
