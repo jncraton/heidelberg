@@ -56,7 +56,6 @@ function CodeBlock(el)
 end
 
 function Para(el)
-  -- Remove trailing period on paragraphs
   local inls = el.content
   if #inls == 0 then
     return nil

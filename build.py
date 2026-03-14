@@ -47,12 +47,9 @@ def _save_biblegateway_cache() -> None:
 def strip_passage(html):
     passage = BeautifulSoup(html, "html.parser")
 
-    # Remove any scripts/styles to be safe.
     for tag in passage.select("script, style"):
         tag.decompose()
 
-    # Simplify the passage HTML by removing navigation and reference elements.
-    # These are not needed for inline scripture display.
     for tag in passage.select(
         "a.full-chap-link, div.crossrefs, sup.crossreference, div.passage-other-trans"
     ):
@@ -85,7 +82,6 @@ def _fetch_bible_passage(url: str) -> str:
 
     soup = BeautifulSoup(resp.text, "html.parser")
 
-    # BibleGateway's passage content is inside a div with class "passage-content".
     passage = soup.select_one("div.passage-content")
     if not passage:
         print("  Warning: passage content not found")
@@ -103,7 +99,6 @@ def _replace_bible_links(html: str) -> str:
 
     soup = BeautifulSoup(html, "html.parser")
 
-    # Collect all linked passages that need to be fetched.
     urls: set[str] = set()
     for a in soup.find_all("a", href=True):
         href = a["href"]
@@ -114,7 +109,6 @@ def _replace_bible_links(html: str) -> str:
         urls.add(href)
 
     if urls:
-        # Fetch passages in parallel while respecting existing cache.
         urls_to_fetch = [u for u in urls if u not in _BIBLEGATEWAY_CACHE]
         if urls_to_fetch:
             with ThreadPoolExecutor(max_workers=4) as executor:
@@ -125,7 +119,6 @@ def _replace_bible_links(html: str) -> str:
                         with _CACHE_LOCK:
                             _BIBLEGATEWAY_CACHE[url] = passage_html
 
-    # Replace links with fetched passages.
     for a in soup.find_all("a", href=True):
         href = a["href"]
         if "biblegateway.com/passage" not in href:
@@ -133,7 +126,6 @@ def _replace_bible_links(html: str) -> str:
         if "version=ESV" not in href:
             continue
 
-        # Use the link text as the summary content.
         summary_text = a.get_text(strip=True)
         if not summary_text:
             summary_text = href
@@ -146,7 +138,6 @@ def _replace_bible_links(html: str) -> str:
         details.append(summary)
 
         if passage_html:
-            # insert the fetched passage content; parse it as HTML fragment
             fragment = BeautifulSoup(passage_html, "html.parser")
             for child in fragment.contents:
                 details.append(child)
@@ -161,38 +152,26 @@ def _replace_bible_links(html: str) -> str:
 
 
 def _sanitize_markdown(md: str) -> str:
-    # Normalize non-breaking spaces used by pandoc output.
     md = md.replace("\u00a0", " ")
 
     lines = []
 
     for line in md.splitlines():
-        # Remove footnote numbering at the start of footnote reference lines.
-        # e.g. "1 [1 Cor...." -> "[1 Cor...."
         if re.match(r"^\s*\d+\s*\[", line):
             line = re.sub(r"^\s*\d+\s*", "", line)
 
-        # Remove footnote numbers immediately before a hard line break marker.
-        # Example: ",1\" -> ",  "
         line = re.sub(r"\d+\\$", "  ", line)
 
-        # Convert remaining hard line breaks (trailing backslash) into Markdown breaks.
-        # In Markdown, two spaces at end of line emit a <br>.
         line = re.sub(r"\\$", "  ", line)
 
-        # Remove remaining inline footnote numbers at the end of a line.
-        # Example: "... my own,1" -> "... my own,"
         line = re.sub(r"(?<=\S)\d+$", "", line)
 
         lines.append(line)
 
     md = "\n".join(lines)
 
-    # Normalize headings so that h2 are preserved and deeper headings become h3.
-    # Source uses "##" for major sections (Part I/II) and "####" for Lord's Day.
     md = re.sub(r"^(#{3,6})\s+", "### ", md, flags=re.MULTILINE)
 
-    # Convert scripture links from nrsv to ESV.
     md = md.replace("version=nrsv", "version=ESV")
 
     return md
@@ -208,7 +187,6 @@ def _render_html(markdown_text: str) -> str:
             output_format="html5",
         )
 
-        # Replace BibleGateway ESV links with <details> containing the passage.
         html_body = _replace_bible_links(html_body)
     except ImportError as e:
         raise SystemExit(
