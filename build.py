@@ -186,18 +186,13 @@ def clean_line_artifacts(line):
     >>> clean_line_artifacts('value789')
     'value'
     """
-    # check for leading digits followed by a bracket
     if re.match(r"^\s*\d+\s*\[", line):
-        # strip the leading digits and surrounding whitespace
         line = re.sub(r"^\s*\d+\s*", "", line)
 
-    # replace trailing digits and backslash with two spaces
     line = re.sub(r"\d+\\$", "  ", line)
 
-    # replace a lone trailing backslash with two spaces
     line = re.sub(r"\\$", "  ", line)
 
-    # remove digits only if they follow a letter or punctuation
     line = re.sub(r"(?<=[^0-9\s])\d+$", "", line)
 
     return line
