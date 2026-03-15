@@ -11,6 +11,9 @@ format:
 	uvx black@26.3.1 *.py
 	uvx uncomment .
 
+test:
+	python3 -m doctest *.py
+
 index.html:
 	uv run --with beautifulsoup4 --with markdown python3 build.py
 

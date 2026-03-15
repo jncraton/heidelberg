@@ -175,22 +175,41 @@ def _replace_bible_links(html: str) -> str:
     return str(soup)
 
 
+def clean_line_artifacts(line):
+    """
+    >>> clean_line_artifacts('  123 [data]')
+    '[data]'
+    >>> clean_line_artifacts('text 456\\\\')
+    'text   '
+    >>> clean_line_artifacts('item\\\\')
+    'item  '
+    >>> clean_line_artifacts('value789')
+    'value'
+    """
+    # check for leading digits followed by a bracket
+    if re.match(r"^\s*\d+\s*\[", line):
+        # strip the leading digits and surrounding whitespace
+        line = re.sub(r"^\s*\d+\s*", "", line)
+
+    # replace trailing digits and backslash with two spaces
+    line = re.sub(r"\d+\\$", "  ", line)
+
+    # replace a lone trailing backslash with two spaces
+    line = re.sub(r"\\$", "  ", line)
+
+    # remove trailing digits if they follow a non-whitespace character
+    line = re.sub(r"(?<=\S)\d+$", "", line)
+
+    return line
+
+
 def _sanitize_markdown(md: str) -> str:
     md = md.replace("\u00a0", " ")
 
     lines = []
 
     for line in md.splitlines():
-        if re.match(r"^\s*\d+\s*\[", line):
-            line = re.sub(r"^\s*\d+\s*", "", line)
-
-        line = re.sub(r"\d+\\$", "  ", line)
-
-        line = re.sub(r"\\$", "  ", line)
-
-        line = re.sub(r"(?<=\S)\d+$", "", line)
-
-        lines.append(line)
+        lines.append(clean_line_artifacts(line))
 
     md = "\n".join(lines)
 
