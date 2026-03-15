@@ -619,7 +619,7 @@ Cor. 8:4,
 61:1](https://www.biblegateway.com/passage/?search=Isa.%2061:1&version=nrsv)); [John
 14:26](https://www.biblegateway.com/passage/?search=John%2014:26&version=nrsv); [15:26](https://www.biblegateway.com/passage/?search=John%2015:26&version=nrsv); [2
 Cor.
-13:14](https://www.biblegateway.com/passage/?search=2+Cor.+13%3A14&version=NIV); [Gal.
+13:14](https://www.biblegateway.com/passage/?search=2+Cor.+13%3A14&version=nrsv); [Gal.
 4:6](https://www.biblegateway.com/passage/?search=Gal.%204:6&version=nrsv); [Tit.
 3:5-6](https://www.biblegateway.com/passage/?search=Tit.%203:5-6&version=nrsv)
 
