@@ -197,8 +197,8 @@ def clean_line_artifacts(line):
     # replace a lone trailing backslash with two spaces
     line = re.sub(r"\\$", "  ", line)
 
-    # remove trailing digits if they follow a non-whitespace character
-    line = re.sub(r"(?<=\S)\d+$", "", line)
+    # remove digits only if they follow a letter or punctuation
+    line = re.sub(r"(?<=[^0-9\s])\d+$", "", line)
 
     return line
 
