@@ -21,4 +21,4 @@ heidelberg.epub: index.html
 	pandoc $< -o $@
 
 clean:
-	rm -rf __pycache__
+	rm -rf __pycache__ index.html
