@@ -313,7 +313,7 @@ pre {
 @media (prefers-color-scheme: dark) {
   body {
     color: #e1e1e1;
-    background: #111;
+    background: #000;
   }
 
   a {
