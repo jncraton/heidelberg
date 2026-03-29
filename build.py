@@ -248,7 +248,7 @@ html {
 
 body {
   margin: 0;
-  padding: 2rem 1.5rem 3rem;
+  padding: 2rem 2px 3rem;
   color: #111;
   background: #fefefe;
 }
